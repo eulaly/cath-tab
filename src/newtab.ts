@@ -1,56 +1,45 @@
-import { useEffect, useState } from "react";
-import { fetchVerseOfDay } from "./bg";
-import { getCachedVerse, getSettings, setCachedVerse } from "./storage";
-import type { VerseOfDay } from "./types";
+import { fetchVerseOfDay } from "./bg"
+import { getVersion } from "./storage"
 
-function todayUtcDate(): string {
-  return new Date().toISOString().slice(0, 10);
+async function main() {
+  const app = document.querySelector("#app")
+  if (!app) throw new Error("missing #app")
+
+  try {
+    const version = await getVersion()
+    const verse = await fetchVerseOfDay(version)
+
+    const mainEl = document.createElement("main")
+    const card = document.createElement("div")
+    const verseP = document.createElement("p")
+    const refP = document.createElement("p")
+    const link = document.createElement("a")
+    const footer = document.createElement("footer")
+
+    mainEl.className = "shell"
+    card.className = "card"
+    verseP.className = "verse"
+    refP.className = "ref"
+
+    verseP.textContent = verse.htmlText
+    link.href = verse.passageUrl
+    link.target = "_blank"
+    link.rel = "noreferrer"
+    link.textContent = verse.reference
+    footer.textContent = `${verse.versionCode} • powered by biblegateway.com`
+
+    refP.appendChild(link)
+    card.appendChild(verseP)
+    card.appendChild(refP)
+    card.appendChild(footer)
+    mainEl.appendChild(card)
+    app.appendChild(mainEl);
+    } catch (err) {
+    console.error(err);
+    const pre = document.createElement("pre");
+    pre.textContent = err instanceof Error ? err.stack ?? err.message : String(err);
+    app.appendChild(pre);
+    }
 }
 
-export default function App() {
-  const [verse, setVerse] = useState<VerseOfDay | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const settings = await getSettings();
-        const date = todayUtcDate();
-        const cached = await getCachedVerse(date, settings.defaultVersionId);
-        if (cached) {
-          setVerse(cached);
-          setLoading(false);
-          return;
-        }
-
-        const fresh = await fetchVerseOfDay(settings.defaultVersionId);
-        await setCachedVerse(date, settings.defaultVersionId, fresh);
-        setVerse(fresh);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "failed to load verse");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  if (loading) return <main className="shell"><div className="card">loading…</div></main>;
-  if (error) return <main className="shell"><div className="card">{error}</div></main>;
-  if (!verse) return <main className="shell"><div className="card">no verse available</div></main>;
-
-  return (
-    <main className="shell">
-      <article className="card">
-        <p className="verse">{verse.plainText}</p>
-        <p className="reference">
-          <a href={verse.passageUrl} target="_blank" rel="noreferrer">{verse.reference}</a>
-        </p>
-        <footer className="footer">
-          <span>{verse.versionCode}</span>
-          <a href="https://www.biblegateway.com/" target="_blank" rel="noreferrer">powered by biblegateway.com</a>
-        </footer>
-      </article>
-    </main>
-  );
-}
+void main();
