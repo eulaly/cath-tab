@@ -1,0 +1,28 @@
+{
+  "manifest_version": 2,
+  "name": "Catholic Daily Reading",
+    "version": "0.1.0",
+  "description": "Display daily Bible verse in New Tab.",
+  "permissions": ["storage"],
+  "host_permissions": [
+	"https://biblegateway.com"
+  ],
+  "chrome_url_overrides": {
+	"newtab": "newtab.html"
+    },
+  "options_page": "options.html",
+  "browser_specific_settings": {
+      "gecko": {
+	  "id": "catholic-daily-reading",
+	  "data_collection_permissions": {
+	      "required": ["none"]
+	  }
+      }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.mozilla.org/*"],
+      "js": ["borderify.js"]
+    }
+  ]
+}

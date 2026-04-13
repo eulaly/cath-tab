@@ -1,0 +1,385 @@
+* catholic tab mvp
+
+** goal
+replace the browser new tab page with bible gateway's verse of the day.
+default version: rsvce (`215`).
+v1 only:
+- fetch bg atom feed
+- parse verse text + reference + passage url
+- display cleanly on new tab
+- simple options page with bible version selector
+- persist selected version in extension storage
+- keep attribution visible
+
+not in v1:
+- random verse
+- daily mass readings
+- liturgy of the hours
+- weather, search widgets, background sync, accounts
+
+** architecture
+tiny webextension:
+
+- `manifest.json`
+- `newtab.html`
+- `options.html`
+- `src/newtab.tsx`
+- `src/options.tsx`
+- `src/bg.ts`
+- `src/storage.ts`
+- `src/types.ts`
+- `src/styles.css`
+
+flow:
+1. read selected version from storage
+2. fetch `https://www.biblegateway.com/votd/get/?format=atom&version=<id>`
+3. parse xml with `domparser`
+4. extract entry title, content, link, updated timestamp, version id
+5. cache result for the current date + version
+6. render centered verse card
+
+** overview
+| file           | purpose                           |
+| -------------- | --------------------------------- |
+| manifest.json  | tells browser what extension does |
+| newtab.html    | page shown when opening new tab   |
+| options.html   | settings UI                       |
+| src/bg.ts      | code that fetches biblegateway    |
+| src/storage.ts | saves user settings               |
+| src/newtab.ts  | logic for main screen             |
+| src/options.ts | logic for settings screen         |
+| styles.css     | appearance                        |
+
+** default files
+*** manifest sketch
+```json
+{
+  "manifest_version": 3,
+  "name": "catholic tab",
+  "version": "0.1.0",
+  "description": "new tab page showing bible gateway verse of the day.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.biblegateway.com/*"
+  ],
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "options_page": "options.html"
+}
+```
+
+for firefox, the same structure should work with webextension packaging.
+*** types
+
+```ts
+export type BibleVersion = {
+  id: string;
+  code: string;
+  label: string;
+};
+
+export type VerseOfDay = {
+  reference: string;
+  htmlText: string;
+  plainText: string;
+  passageUrl: string;
+  updated: string;
+  versionCode: string;
+  versionId: string;
+};
+
+export type UserSettings = {
+  defaultVersionId: string;
+};
+```
+
+*** supported versions
+start with a tiny allowlist.
+
+```ts
+import type { BibleVersion } from "./types";
+
+export const SUPPORTED_VERSIONS: BibleVersion[] = [
+  { id: "215", code: "RSVCE", label: "revised standard version, catholic edition" },
+  { id: "463", code: "NABRE", label: "new american bible, revised edition" }
+];
+
+export const DEFAULT_VERSION_ID = "215";
+```
+
+verify `463` against live output during implementation.
+
+*** storage
+
+```ts
+import { DEFAULT_VERSION_ID } from "./versions";
+import type { UserSettings, VerseOfDay } from "./types";
+
+const SETTINGS_KEY = "settings";
+const CACHE_PREFIX = "votd:";
+
+export async function getSettings(): Promise<UserSettings> {
+  const result = await chrome.storage.local.get(SETTINGS_KEY);
+  return {
+    defaultVersionId: result[SETTINGS_KEY]?.defaultVersionId ?? DEFAULT_VERSION_ID,
+  };
+}
+
+export async function setSettings(settings: UserSettings): Promise<void> {
+  await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+}
+
+export async function getCachedVerse(date: string, versionId: string): Promise<VerseOfDay | null> {
+  const key = `${CACHE_PREFIX}${date}:${versionId}`;
+  const result = await chrome.storage.local.get(key);
+  return result[key] ?? null;
+}
+
+export async function setCachedVerse(date: string, versionId: string, verse: VerseOfDay): Promise<void> {
+  const key = `${CACHE_PREFIX}${date}:${versionId}`;
+  await chrome.storage.local.set({ [key]: verse });
+}
+```
+
+*** bible gateway provider
+
+```ts
+import type { VerseOfDay } from "./types";
+
+function decodeHtmlEntities(input: string): string {
+  const doc = new DOMParser().parseFromString(`<!doctype html><body>${input}`, "text/html");
+  return doc.body.textContent ?? "";
+}
+
+function mustGetText(parent: Element, selector: string): string {
+  const el = parent.querySelector(selector);
+  if (!el?.textContent) throw new Error(`missing xml field: ${selector}`);
+  return el.textContent.trim();
+}
+
+export async function fetchVerseOfDay(versionId: string): Promise<VerseOfDay> {
+  const url = `https://www.biblegateway.com/votd/get/?format=atom&version=${encodeURIComponent(versionId)}`;
+  const response = await fetch(url, { method: "GET" });
+
+  if (!response.ok) {
+    throw new Error(`bible gateway fetch failed: ${response.status}`);
+  }
+
+  const xml = await response.text();
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+
+  const parserError = doc.querySelector("parsererror");
+  if (parserError) {
+    throw new Error("failed to parse atom feed");
+  }
+
+  const entry = doc.querySelector("entry");
+  if (!entry) {
+    throw new Error("atom feed did not contain an entry");
+  }
+
+  const reference = mustGetText(entry, "title");
+  const updated = mustGetText(entry, "updated");
+  const htmlText = mustGetText(entry, "content");
+  const passageUrl = entry.querySelector("link[href]")?.getAttribute("href") ?? "https://www.biblegateway.com/";
+  const idText = mustGetText(entry, "id");
+  const versionCode = idText.split(":").pop() ?? "";
+
+  const feedSelfLink = doc.querySelector('feed > link[rel="self"]')?.getAttribute("href") ?? "";
+  const versionIdMatch = feedSelfLink.match(/[?&]version=(\d+)/);
+  const resolvedVersionId = versionIdMatch?.[1] ?? versionId;
+
+  return {
+    reference,
+    htmlText,
+    plainText: decodeHtmlEntities(htmlText).replace(/\s+/g, " ").trim(),
+    passageUrl,
+    updated,
+    versionCode,
+    versionId: resolvedVersionId,
+  };
+}
+```
+
+*** new tab page logic
+
+```tsx
+import { useEffect, useState } from "react";
+import { fetchVerseOfDay } from "./bg";
+import { getCachedVerse, getSettings, setCachedVerse } from "./storage";
+import type { VerseOfDay } from "./types";
+
+function todayUtcDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export default function App() {
+  const [verse, setVerse] = useState<VerseOfDay | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const settings = await getSettings();
+        const date = todayUtcDate();
+        const cached = await getCachedVerse(date, settings.defaultVersionId);
+        if (cached) {
+          setVerse(cached);
+          setLoading(false);
+          return;
+        }
+
+        const fresh = await fetchVerseOfDay(settings.defaultVersionId);
+        await setCachedVerse(date, settings.defaultVersionId, fresh);
+        setVerse(fresh);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "failed to load verse");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  if (loading) return <main className="shell"><div className="card">loading…</div></main>;
+  if (error) return <main className="shell"><div className="card">{error}</div></main>;
+  if (!verse) return <main className="shell"><div className="card">no verse available</div></main>;
+
+  return (
+    <main className="shell">
+      <article className="card">
+        <p className="verse">{verse.plainText}</p>
+        <p className="reference">
+          <a href={verse.passageUrl} target="_blank" rel="noreferrer">{verse.reference}</a>
+        </p>
+        <footer className="footer">
+          <span>{verse.versionCode}</span>
+          <a href="https://www.biblegateway.com/" target="_blank" rel="noreferrer">powered by biblegateway.com</a>
+        </footer>
+      </article>
+    </main>
+  );
+}
+```
+
+*** options page logic
+
+```tsx
+import { useEffect, useState } from "react";
+import { getSettings, setSettings } from "./storage";
+import { SUPPORTED_VERSIONS } from "./versions";
+
+export default function OptionsApp() {
+  const [versionId, setVersionId] = useState("215");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      const settings = await getSettings();
+      setVersionId(settings.defaultVersionId);
+    })();
+  }, []);
+
+  async function onSave() {
+    await setSettings({ defaultVersionId: versionId });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1200);
+  }
+
+  return (
+    <main className="options-shell">
+      <section className="card">
+        <h1>catholic tab</h1>
+        <label htmlFor="version">default bible version</label>
+        <select id="version" value={versionId} onChange={(e) => setVersionId(e.target.value)}>
+          {SUPPORTED_VERSIONS.map((v) => (
+            <option key={v.id} value={v.id}>{v.label}</option>
+          ))}
+        </select>
+        <button onClick={onSave}>save</button>
+        {saved ? <p>saved.</p> : null}
+      </section>
+    </main>
+  );
+}
+```
+
+*** styling rules
+use very little chrome.
+requirements:
+- centered card
+- no page scroll on common desktop sizes
+- verse text uses `clamp()`
+- max width around 60–70ch
+- footer small but always visible
+
+example:
+
+```css
+:root {
+  color-scheme: light dark;
+}
+
+html, body, *root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: Georgia, serif;
+}
+
+.shell, .options-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.card {
+  width: min(72ch, 100%);
+  padding: 32px;
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+
+.verse {
+  font-size: clamp(1.6rem, 2vw + 1rem, 2.6rem);
+  line-height: 1.35;
+  margin: 0 0 20px;
+  text-wrap: balance;
+}
+
+.reference {
+  font-size: 1rem;
+  margin: 0 0 24px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.9rem;
+}
+```
+
+** open questions
+1. does bg return the selected version cleanly for all intended version ids?
+2. is direct fetch reliable in both chrome and firefox extension contexts?
+3. does bg want any attribution beyond the visible footer link?
+4. should options page include a manual refresh button? probably not in v1.
+
+** v1 acceptance criteria
+- new tab page loads bg verse of the day
+- default version is rsvce (`215`)
+- user can change version on options page
+- selected version persists
+- verse is cached per day and version
+- attribution stays visible
+- links open full passage on bible gateway
+- clean error state if fetch or parse fails
+
+** next step
+implement the skeleton with vite + react + typescript as a fresh project rather than a deep fork of the existing extension.
