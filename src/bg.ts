@@ -1,8 +1,9 @@
 import type { VerseOfDay } from "./types";
 
 function decodeHtmlEntities(input: string): string {
-  const doc = new DOMParser().parseFromString(`<!doctype html><body>${input}`, "text/html");
-  return doc.body.textContent ?? "";
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = input;
+  return textarea.value;
 }
 
 function mustGetText(parent: Element, selector: string): string {
@@ -20,11 +21,16 @@ export async function fetchVerseOfDay(versionId: string): Promise<VerseOfDay> {
   }
 
   const xml = await response.text();
+
+  if (!xml.includes("<feed") && !xml.includes("<entry")) {
+    throw new Error(`unexpected response from bible gateway: ${xml.slice(0, 300)}`);
+  }
+
   const doc = new DOMParser().parseFromString(xml, "application/xml");
 
   const parserError = doc.querySelector("parsererror");
   if (parserError) {
-    throw new Error("failed to parse atom feed");
+    throw new Error(`failed to parse atom feed: ${parserError.textContent ?? "unknown parser error"}`);
   }
 
   const entry = doc.querySelector("entry");
@@ -35,7 +41,9 @@ export async function fetchVerseOfDay(versionId: string): Promise<VerseOfDay> {
   const reference = mustGetText(entry, "title");
   const updated = mustGetText(entry, "updated");
   const htmlText = mustGetText(entry, "content");
-  const passageUrl = entry.querySelector("link[href]")?.getAttribute("href") ?? "https://www.biblegateway.com/";
+  const passageUrl =
+    entry.querySelector('link:not([rel])[href]')?.getAttribute("href") ??
+    "https://www.biblegateway.com/";
   const idText = mustGetText(entry, "id");
   const versionCode = idText.split(":").pop() ?? "";
 
