@@ -9,7 +9,8 @@ html, body {
 
 #app {
     min-height: 100vh;  
-    background:  #F7E5BB;
+    background: #F7E5BB;
+    /* #3F2F07; #F2D592 */
 }
 
 body {
@@ -39,7 +40,7 @@ body {
 }
 
 .reference {
-  font-size: 1rem;
+  font-size: 1.5rem;
   margin: 0 0 24px;
 }
 

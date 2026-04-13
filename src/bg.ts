@@ -17,22 +17,19 @@ export async function fetchVerseOfDay(versionId: string): Promise<VerseOfDay> {
   const response = await fetch(url, { method: "GET" });
 
   if (!response.ok) {
-    throw new Error(`bible gateway fetch failed: ${response.status}`);
+    throw new Error(`BibleGateway fetch failed: ${response.status}`);
   }
 
   const xml = await response.text();
-
   if (!xml.includes("<feed") && !xml.includes("<entry")) {
-    throw new Error(`unexpected response from bible gateway: ${xml.slice(0, 300)}`);
+    throw new Error(`Unexpected response from BibleGateway: ${xml.slice(0, 300)}`);
   }
 
   const doc = new DOMParser().parseFromString(xml, "application/xml");
-
   const parserError = doc.querySelector("parsererror");
   if (parserError) {
     throw new Error(`failed to parse atom feed: ${parserError.textContent ?? "unknown parser error"}`);
   }
-
   const entry = doc.querySelector("entry");
   if (!entry) {
     throw new Error("atom feed did not contain an entry");
@@ -46,15 +43,13 @@ export async function fetchVerseOfDay(versionId: string): Promise<VerseOfDay> {
     "https://www.biblegateway.com/";
   const idText = mustGetText(entry, "id");
   const versionCode = idText.split(":").pop() ?? "";
-
   const feedSelfLink = doc.querySelector('feed > link[rel="self"]')?.getAttribute("href") ?? "";
   const versionIdMatch = feedSelfLink.match(/[?&]version=(\d+)/);
   const resolvedVersionId = versionIdMatch?.[1] ?? versionId;
 
   return {
     reference,
-    htmlText,
-    plainText: decodeHtmlEntities(htmlText).replace(/\s+/g, " ").trim(),
+    text: decodeHtmlEntities(htmlText).replace(/\s+/g, " ").trim(),
     passageUrl,
     updated,
     versionCode,

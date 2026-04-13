@@ -21,7 +21,7 @@ async function main() {
     verseP.className = "verse"
     refP.className = "ref"
 
-    verseP.textContent = verse.plainText
+    verseP.textContent = verse.text
     link.href = verse.passageUrl
     link.target = "_blank"
     link.rel = "noreferrer"
