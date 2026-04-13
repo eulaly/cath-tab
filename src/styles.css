@@ -76,13 +76,14 @@ html, body {
 }
 .options-button {
   font-size: 0.85rem;
+  color:#222;
   padding: 0.45rem 0.8rem;
   border-radius: 8px;
   border: 1px solid #d6d6d2;
   background: #f3f3f1;
   cursor: pointer;
   font-family: inherit;
-  transition: all 120ms ease;
+  transition: all 60ms ease;
 }
 
 .options-button:hover {

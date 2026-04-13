@@ -4,16 +4,6 @@ export type BibleVersion = {
   label: string;
 };
 
-// export type VerseOfDay = {
-//   reference: string;
-//   htmlText: string;
-//   plainText: string;
-//   passageUrl: string;
-//   updated: string;
-//   versionCode: string;
-//   versionId: string;
-// };
-
 export type VerseOfDay = {
   reference: string;
   text: string;
