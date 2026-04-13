@@ -16,6 +16,16 @@ async function main() {
     const link = document.createElement("a")
     const footer = document.createElement("footer")
 
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const optionsLink = document.createElement("button");
+    optionsLink.className = "subtle-button";
+    optionsLink.type = "button";
+    optionsLink.textContent = "options";
+    optionsLink.addEventListener("click", () => {
+    chrome.runtime.openOptionsPage();
+        });
+
     mainEl.className = "shell"
     card.className = "card"
     verseP.className = "verse"
@@ -33,13 +43,20 @@ async function main() {
     card.appendChild(refP)
     card.appendChild(footer)
     mainEl.appendChild(card)
+    
     app.appendChild(mainEl);
+
+    actions.appendChild(optionsLink);
+    card.appendChild(actions);
+    card.appendChild(footer);
+
     } catch (err) {
     console.error(err);
     const pre = document.createElement("pre");
     pre.textContent = err instanceof Error ? err.stack ?? err.message : String(err);
     app.appendChild(pre);
     }
+    
 }
 
 void main();
