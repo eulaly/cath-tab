@@ -2,47 +2,44 @@ import { SUPPORTED_VERSIONS } from "./versions"
 import { getVersion, setVersion } from "./storage"
 
 async function main() {
-  const app = document.querySelector("#app")
-  if (!app) throw new Error("missing #app")
 
-  const current = await getVersion()
+  const select =
+    document.querySelector("#versionSelect") as HTMLSelectElement
 
-  const wrapper = document.createElement("main")
-  const card = document.createElement("div")
-  const heading = document.createElement("h1")
-  const label = document.createElement("label")
-  const select = document.createElement("select")
-  const button = document.createElement("button")
-  const status = document.createElement("p")
+  const status =
+    document.querySelector("#status")!
 
-  wrapper.className = "options-shell"
-  card.className = "card"
-  heading.textContent = "catholic tab"
-  label.htmlFor = "version"
-  label.textContent = "default bible version"
-  select.id = "version"
-  button.textContent = "save"
+  const current =
+    await getVersion()
 
   for (const v of SUPPORTED_VERSIONS) {
-    const opt = document.createElement("option")
-    opt.value = v.id
-    opt.textContent = v.label
-    if (v.id === current) opt.selected = true
+
+    const opt =
+      document.createElement("option")
+
+    opt.value =
+      v.id
+
+    opt.textContent =
+      v.label
+
+    if (v.id === current)
+      opt.selected = true
+
     select.appendChild(opt)
+
   }
 
-  button.addEventListener("click", async () => {
-    await setVersion(select.value)
-    status.textContent = "saved."
-  })
+  document
+    .querySelector("#saveBtn")!
+    .addEventListener("click", async () => {
 
-  card.appendChild(heading)
-  card.appendChild(label)
-  card.appendChild(select)
-  card.appendChild(button)
-  card.appendChild(status)
-  wrapper.appendChild(card)
-  app.appendChild(wrapper)
+      await setVersion(select.value)
+
+      status.textContent = "saved."
+
+    })
+
 }
 
 void main()

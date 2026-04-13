@@ -1,16 +1,26 @@
 <!doctype html>
-
 <html>
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/src/styles.css">
 </head>
-
 <body>
+  <main class="shell">
+    <div class="card">
+      <p id="verse" class="verse"></p>
+      <p id="reference" class="ref"></p>
 
-<div id="app"></div>
+      <div class="actions">
+        <button id="optionsBtn" class="subtle-button">options</button>
+      </div>
 
-<script type="module" src="/src/newtab.ts"></script>
+      <footer class="footer">
+        <a id="versionLink" class="version-link"></a>
+        <span>powered by biblegateway.com</span>
+      </footer>
+    </div>
+  </main>
 
+  <script type="module" src="/src/newtab.ts"></script>
 </body>
 </html>
