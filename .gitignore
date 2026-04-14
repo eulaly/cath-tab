@@ -1,5 +1,9 @@
 # --- pre-release artifacts ---
 dist/
+scripts/
+*.ps1
+*.zip
+*.xpi
 
 # --- python bytecode ---
 __pycache__/
