@@ -15,12 +15,10 @@ npm run build
 ```
 
 ## packaging
-windows powershell:
-```powershell
+```bash
 npm run build
-copy manifest.json dist\
-Compress-Archive -Path dist\* -DestinationPath cath-tab-chrome-v0.1.0.zip -Force
-Compress-Archive -Path dist\* -DestinationPath cath-tab-firefox-v0.1.0.xpi -Force
+cp manifest.json dist\
+npx web-ext build --source-dir dist --artifacts-dir releases --overwrite-dest
 ```
 
 ## roadmap
@@ -28,3 +26,6 @@ Compress-Archive -Path dist\* -DestinationPath cath-tab-firefox-v0.1.0.xpi -Forc
 - other bibles, as copyrights permit
 - daily mass readings
 - liturgy of the hours
+
+## license
+MIT
