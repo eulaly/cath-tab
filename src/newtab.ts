@@ -4,26 +4,26 @@ import { SUPPORTED_VERSIONS } from "./versions";
 
 
 async function main() {
-  const openOptionsBtn = document.querySelector("#openOptionsBtn") as HTMLButtonElement | null;
-  const closeOptionsBtn = document.querySelector("#closeOptionsBtn") as HTMLButtonElement | null;
+  const openSettingsBtn = document.querySelector("#openSettingsBtn") as HTMLButtonElement | null;
+  const closeSettingsBtn = document.querySelector("#closeSettingsBtn") as HTMLButtonElement | null;
   const drawerBackdrop = document.querySelector("#drawerBackdrop") as HTMLDivElement | null;
-  const optionsDrawer = document.querySelector("#optionsDrawer") as HTMLElement | null;
-  if (!openOptionsBtn) throw new Error("missing #openOptionsBtn");
-  if (!closeOptionsBtn) throw new Error("missing #closeOptionsBtn");
+  const settingsDrawer = document.querySelector("#settingsDrawer") as HTMLElement | null;
+  if (!openSettingsBtn) throw new Error("missing #openSettingsBtn");
+  if (!closeSettingsBtn) throw new Error("missing #closeSettingsBtn");
   if (!drawerBackdrop) throw new Error("missing #drawerBackdrop");
-  if (!optionsDrawer) throw new Error("missing #optionsDrawer");
+  if (!settingsDrawer) throw new Error("missing #settingsDrawer");
   function openDrawer() {
     drawerBackdrop.hidden = false;
-    optionsDrawer.hidden = false;
-    optionsDrawer.setAttribute("aria-hidden", "false");
+    settingsDrawer.hidden = false;
+    settingsDrawer.setAttribute("aria-hidden", "false");
   }
   function closeDrawer() {
     drawerBackdrop.hidden = true;
-    optionsDrawer.hidden = true;
-    optionsDrawer.setAttribute("aria-hidden", "true");
+    settingsDrawer.hidden = true;
+    settingsDrawer.setAttribute("aria-hidden", "true");
   }
-  openOptionsBtn.addEventListener("click",openDrawer)
-  closeOptionsBtn.addEventListener("click",closeDrawer)
+  openSettingsBtn.addEventListener("click",openDrawer)
+  closeSettingsBtn.addEventListener("click",closeDrawer)
   drawerBackdrop.addEventListener("click",closeDrawer)
   document.addEventListener("keydown",
     (e) => {
@@ -35,15 +35,15 @@ async function main() {
   const referenceEl = document.querySelector("#reference");
   const versionLinkEl = document.querySelector("#versionLink") as HTMLAnchorElement | null;
   const versionSelectEl = document.querySelector("#versionSelect") as HTMLSelectElement | null;
-  const saveOptionsBtnEl = document.querySelector("#saveOptionsBtn") as HTMLButtonElement | null;
-  const optionsStatusEl = document.querySelector("#optionsStatus") as HTMLElement | null;
+  const saveSettingsBtnEl = document.querySelector("#saveSettingsBtn") as HTMLButtonElement | null;
+  const settingsStatusEl = document.querySelector("#settingsStatus") as HTMLElement | null;
 
   if (!verseEl) throw new Error("missing #verse");
   if (!referenceEl) throw new Error("missing #reference");
   if (!versionLinkEl) throw new Error("missing #versionLink");
   if (!versionSelectEl) throw new Error("missing #versionSelect");
-  if (!saveOptionsBtnEl) throw new Error("missing #saveOptionsBtn");
-  if (!optionsStatusEl) throw new Error("missing #optionsStatus");
+  if (!saveSettingsBtnEl) throw new Error("missing #saveSettingsBtn");
+  if (!settingsStatusEl) throw new Error("missing #settingsStatus");
 
   const currentVersion = await getVersion();
   const verse = await fetchVerseOfDay(currentVersion);
@@ -61,9 +61,9 @@ async function main() {
     versionSelectEl.appendChild(opt);
   }
 
-  saveOptionsBtnEl.addEventListener("click", async () => {
+  saveSettingsBtnEl.addEventListener("click", async () => {
     await setVersion(versionSelectEl.value);
-    optionsStatusEl.textContent = "Saved. Open a new tab to refresh.";
+    settingsStatusEl.textContent = "Saved. Open a new tab to refresh.";
   });
 }
 
