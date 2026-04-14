@@ -1,3 +1,6 @@
+# --- pre-release artifacts ---
+dist/
+
 # --- python bytecode ---
 __pycache__/
 *.py[cod]
