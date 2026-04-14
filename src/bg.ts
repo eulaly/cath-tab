@@ -1,11 +1,16 @@
 import type { VerseOfDay } from "./types";
 
 function decodeHtmlEntities(input: string): string {
-  const textarea = document.createElement("textarea");
-  textarea.innerHTML = input;
-  return textarea.value;
+  return input
+    .replace(/&ldquo;|&#8220;/g, "“")
+    .replace(/&rdquo;|&#8221;/g, "”")
+    .replace(/&lsquo;|&#8216;/g, "‘")
+    .replace(/&rsquo;|&#8217;/g, "’")
+    .replace(/&quot;|&#34;/g, "\"")
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&amp;|&#38;/g, "&")
+    .replace(/&nbsp;|&#160;/g, " ");
 }
-
 function mustGetText(parent: Element, selector: string): string {
   const el = parent.querySelector(selector);
   if (!el?.textContent) throw new Error(`missing xml field: ${selector}`);
@@ -37,7 +42,7 @@ export async function fetchVerseOfDay(versionId: string): Promise<VerseOfDay> {
 
   const reference = mustGetText(entry, "title");
   const updated = mustGetText(entry, "updated");
-  const htmlText = mustGetText(entry, "content");
+  const rawText = mustGetText(entry, "content");
   const passageUrl =
     entry.querySelector('link:not([rel])[href]')?.getAttribute("href") ??
     "https://www.biblegateway.com/";
@@ -49,7 +54,7 @@ export async function fetchVerseOfDay(versionId: string): Promise<VerseOfDay> {
 
   return {
     reference,
-    text: decodeHtmlEntities(htmlText).replace(/\s+/g, " ").trim(),
+    text: decodeHtmlEntities(rawText).replace(/\s+/g, " ").trim(),
     passageUrl,
     updated,
     versionCode,
