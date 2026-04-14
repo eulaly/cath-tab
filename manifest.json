@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Catholic Daily Reading",
+  "name": "Catholic New Tab",
     "version": "0.1.0",
-  "description": "Display daily Bible verse in New Tab.",
+  "description": "Replace New Tab with daily Bible verse.",
   "permissions": ["storage"],
   "host_permissions": [
 	"https://www.biblegateway.com/*"
@@ -10,10 +10,9 @@
   "chrome_url_overrides": {
 	"newtab": "newtab.html"
     },
-  "options_page": "options.html",
   "browser_specific_settings": {
       "gecko": {
-	  "id": "catholic-daily-reading",
+	  "id": "catholic-new-tab",
 	  "data_collection_permissions": {
 	      "required": ["none"]
 	  }
