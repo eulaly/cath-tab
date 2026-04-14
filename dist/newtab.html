@@ -2,11 +2,33 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <script type="module" crossorigin src="/assets/newtab-lXJ_huB4.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/storage-DwgiLdib.js">
-  <link rel="stylesheet" crossorigin href="/assets/storage-s9Kr2tv5.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="module" crossorigin src="/assets/newtab-jR2szV6Y.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/storage-CHMtwxM5.js">
+  <link rel="stylesheet" crossorigin href="/assets/storage-D131HxYs.css">
 </head>
 <body>
+  <button id="openOptionsBtn" class="options-button" type="button">settings</button>
+  <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+    <aside id="optionsDrawer" class="options-drawer" hidden aria-hidden="true">
+      <div class="drawer-header">
+        <h2 class="drawer-title">Settings</h2>
+        <button id="closeOptionsBtn" class="drawer-close-button" type="button" aria-label="close settings">
+          ×
+        </button>
+      </div>
+
+      <div class="drawer-content">
+        <label for="versionSelect">default bible version</label>
+        <select id="versionSelect"></select>
+
+        <div class="drawer-actions">
+          <button id="saveOptionsBtn" class="save-button" type="button">save</button>
+          <span id="optionsStatus" class="options-status"></span>
+        </div>
+      </div>
+    </aside>
+
   <main class="shell">
     <div class="card">
       <p id="verse" class="verse"></p>
@@ -17,7 +39,6 @@
           <a id="versionLink" class="version-link"></a>
           <span class="attribution"> · powered by biblegateway.com</span>
           </div>
-        <button id="optionsBtn" class="options-button">options</button>
       </footer>
       
     </div>
