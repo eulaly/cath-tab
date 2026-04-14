@@ -12,7 +12,7 @@
     },
   "browser_specific_settings": {
       "gecko": {
-	  "id": "catholic-new-tab",
+	  "id": "catholic-new-tab@example.org",
 	  "data_collection_permissions": {
 	      "required": ["none"]
 	  }
